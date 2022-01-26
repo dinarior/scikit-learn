@@ -501,7 +501,10 @@ def lloyd_iter_chunked_dense_with_min_sample(
     if update_centers:
         memset(&centers_new[0, 0], 0, n_clusters * n_features * sizeof(floating))
         memset(&weight_in_clusters[0], 0, n_clusters * sizeof(floating))
-
+    max_distances = <floating*> malloc(n_chunks * sizeof(floating))
+    max_indices = <int*> malloc(n_chunks * sizeof(int))
+    max_index[0] = -1
+    max_distance[0] = 0
     with nogil, parallel(num_threads=n_threads):
         # thread local buffers
         centers_new_chunk = <floating*> calloc(n_clusters * n_features, sizeof(floating))
@@ -525,12 +528,19 @@ def lloyd_iter_chunked_dense_with_min_sample(
                 centers_new_chunk,
                 weight_in_clusters_chunk,
                 pairwise_distances_chunk,
-                max_index,
-                max_distance,
+                max_indices+chunk_idx,
+                max_distances+chunk_idx,
                 update_centers)
 
         # reduction from local buffers. The gil is necessary for that to avoid
         # race conditions.
+
+        #with gil:
+        #    if maxdistances[0] > max_distance[0]:
+        #        max_index[0] = maxindices[0]+chunk_idx * n_samples_chunk
+        #        max_distance[0] = maxdistances[0]
+
+
         if update_centers:
             with gil:
                 for j in range(n_clusters):
@@ -542,6 +552,15 @@ def lloyd_iter_chunked_dense_with_min_sample(
         free(weight_in_clusters_chunk)
         free(pairwise_distances_chunk)
 
+    max_index[0] = -1
+    max_distance[0] = 0
+
+    for chunk_idx in range(n_chunks):
+        if max_distances[chunk_idx] > max_distance[0]:
+            max_index[0] = max_indices[chunk_idx]+chunk_idx * n_samples_chunk
+            max_distance[0] = max_distances[chunk_idx]
+    free(max_indices)
+    free(max_distances)
     if update_centers:
         _relocate_empty_clusters_dense(X, sample_weight, centers_old,
                                     centers_new, weight_in_clusters, labels)
@@ -559,8 +578,8 @@ cdef void _update_chunk_dense_with_min_sample(
         floating *centers_new,                # OUT
         floating *weight_in_clusters,         # OUT
         floating *pairwise_distances,         # OUT
-        int[::1] max_index,                   # OUT
-        floating[::1] max_distance,           # OUT
+        int* max_index,                   # OUT
+        floating* max_distance,           # OUT
         bint update_centers) nogil:
     """K-means combined EM step for one dense data chunk.
 
@@ -599,9 +618,9 @@ cdef void _update_chunk_dense_with_min_sample(
             if sq_dist < min_sq_dist:
                 min_sq_dist = sq_dist
                 label = j
-        if min_sq_dist > max_distance[0]:
+        if min_sq_dist+x_squared_norms[i:i+1][0] > max_distance[0]:
             max_index[0] = i
-            max_distance[0] = min_sq_dist
+            max_distance[0] = min_sq_dist+x_squared_norms[i:i+1][0]
         labels[i] = label
 
         if update_centers:

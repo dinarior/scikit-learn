@@ -741,7 +741,7 @@ def _dpmeans_single_lloyd(
                 inertia = _inertia(X, sample_weight, centers, labels, n_threads)
                 print(f"Iteration {i}, inertia {inertia}.")
             new_cluster = False
-            if max_index[0] != -1 and max_distance[0] > delta:
+            if max_index[0] != -1 and np.sqrt(max_distance)[0] > delta:
                 centers = np.vstack((centers, X[max_index])).astype(X.dtype)
                 centers_new = np.vstack((centers_new, X[max_index])).astype(X.dtype)
                 weight_in_clusters = np.hstack([weight_in_clusters, [0]]).astype(
@@ -2946,24 +2946,22 @@ class MiniBatchDPMeans(KMeans):
                     verbose=self.verbose,
                     n_threads=self._n_threads,
                 )
-
+                new_cluster = False
                 if max_index != -1 and max_distance > self.delta:
                     centers = np.vstack((centers, X[max_index])).astype(X.dtype)
                     centers_new = np.vstack((centers_new, X[max_index])).astype(X.dtype)
                     self.n_clusters += 1
                     self._counts = np.hstack([self._counts, [1]]).astype(X.dtype)
+                    new_cluster = True
 
                 if self._tol > 0.0:
                     centers_squared_diff = np.sum((centers_new - centers) ** 2)
                 else:
                     centers_squared_diff = 0
                 centers, centers_new = centers_new, centers
-                if np.isnan(centers).any():
-                    print(centers)
-                    break
 
-                    # Monitor convergence and do early stopping if necessary
-                if self._mini_batch_convergence(
+                # Monitor convergence and do early stopping if necessary
+                if new_cluster is False and self._mini_batch_convergence(
                     i, n_steps, n_samples, centers_squared_diff, batch_inertia
                 ):
                     break
