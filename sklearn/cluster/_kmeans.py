@@ -740,7 +740,7 @@ def _dpmeans_single_lloyd(
             if verbose:
                 inertia = _inertia(X, sample_weight, centers, labels, n_threads)
                 print(f"Iteration {i}, inertia {inertia}.")
-
+            new_cluster = False
             if max_index[0] != -1 and max_distance[0] > delta:
                 centers = np.vstack((centers, X[max_index])).astype(X.dtype)
                 centers_new = np.vstack((centers_new, X[max_index])).astype(X.dtype)
@@ -748,27 +748,29 @@ def _dpmeans_single_lloyd(
                     X.dtype
                 )
                 center_shift = np.hstack([center_shift, [0]]).astype(X.dtype)
+                new_cluster = True
 
             # update_centers(X,sample_weight,labels,centers_new,weight_in_clusters)
 
             centers, centers_new = centers_new, centers
 
-            if np.array_equal(labels, labels_old):
-                # First check the labels for strict convergence.
-                if verbose:
-                    print(f"Converged at iteration {i}: strict convergence.")
-                strict_convergence = True
-                break
-            else:
-                # No strict convergence, check for tol based convergence.
-                center_shift_tot = (center_shift ** 2).sum()
-                if center_shift_tot <= tol:
+            if new_cluster is False:
+                if np.array_equal(labels, labels_old):
+                    # First check the labels for strict convergence.
                     if verbose:
-                        print(
-                            f"Converged at iteration {i}: center shift "
-                            f"{center_shift_tot} within tolerance {tol}."
-                        )
+                        print(f"Converged at iteration {i}: strict convergence.")
+                    strict_convergence = True
                     break
+                else:
+                    # No strict convergence, check for tol based convergence.
+                    center_shift_tot = (center_shift ** 2).sum()
+                    if center_shift_tot <= tol:
+                        if verbose:
+                            print(
+                                f"Converged at iteration {i}: center shift "
+                                f"{center_shift_tot} within tolerance {tol}."
+                            )
+                        break
 
             labels_old[:] = labels
 
@@ -1590,6 +1592,7 @@ class DPMeans(KMeans):
             centers_init = self._init_centroids(
                 X, x_squared_norms=x_squared_norms, init=init, random_state=random_state
             )
+            print(len(centers_init))
             if self.verbose:
                 print("Initialization complete")
 

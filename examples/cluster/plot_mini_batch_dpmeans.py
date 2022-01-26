@@ -37,7 +37,7 @@ X = X.astype(np.float32)
 # #############################################################################
 # Compute clustering with Means
 
-k_means = DPMeans(init="k-means++", n_clusters=1, n_init=1, delta=1)
+k_means = DPMeans(init="k-means++", n_clusters=1, n_init=10, delta=1)
 t0 = time.time()
 k_means.fit(X)
 t_batch = time.time() - t0
