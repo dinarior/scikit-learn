@@ -2947,7 +2947,7 @@ class MiniBatchDPMeans(KMeans):
                     n_threads=self._n_threads,
                 )
                 new_cluster = False
-                if max_index != -1 and max_distance > self.delta:
+                if max_index != -1 and np.sqrt(max_distance) > self.delta:
                     centers = np.vstack((centers, X[max_index])).astype(X.dtype)
                     centers_new = np.vstack((centers_new, X[max_index])).astype(X.dtype)
                     self.n_clusters += 1
@@ -3071,7 +3071,7 @@ class MiniBatchDPMeans(KMeans):
                 n_threads=self._n_threads,
             )
 
-            if max_index != -1 and max_distance > self.delta:
+            if max_index != -1 and np.sqrt(max_distance) > self.delta:
                 self.cluster_centers_ = np.vstack(
                     (self.cluster_centers_, X[max_index])
                 ).astype(X.dtype)
