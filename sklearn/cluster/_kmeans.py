@@ -1592,7 +1592,7 @@ class DPMeans(KMeans):
             centers_init = self._init_centroids(
                 X, x_squared_norms=x_squared_norms, init=init, random_state=random_state
             )
-            print(len(centers_init))
+
             if self.verbose:
                 print("Initialization complete")
 
