@@ -65,7 +65,7 @@ mbk = MiniBatchDPMeans(
     n_init=10,
     max_no_improvement=10,
     verbose=0,
-    delta=1,
+    delta=3,
 )
 
 
@@ -93,6 +93,7 @@ print(t_mini_batch)
 
 # k_means_labels = pairwise_distances_argmin(X, k_means_cluster_centers)
 mbk_means_labels = pairwise_distances_argmin(X, mbk.cluster_centers_)
+print(len(mbk.cluster_centers_))
 plt.scatter(X[:, 0], X[:, 1], s=1, c=mbk_means_labels)
 plt.show()
 # # KMeans

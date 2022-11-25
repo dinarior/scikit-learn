@@ -2948,8 +2948,8 @@ class MiniBatchDPMeans(KMeans):
                 )
                 new_cluster = False
                 if max_index != -1 and np.sqrt(max_distance) > self.delta:
-                    centers = np.vstack((centers, X[max_index])).astype(X.dtype)
-                    centers_new = np.vstack((centers_new, X[max_index])).astype(X.dtype)
+                    centers = np.vstack((centers, X[minibatch_indices[max_index]])).astype(X.dtype)
+                    centers_new = np.vstack((centers_new, X[minibatch_indices[max_index]])).astype(X.dtype)
                     self.n_clusters += 1
                     self._counts = np.hstack([self._counts, [1]]).astype(X.dtype)
                     new_cluster = True
